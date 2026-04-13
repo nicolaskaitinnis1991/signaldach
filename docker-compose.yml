@@ -1,0 +1,128 @@
+services:
+  # -------------------------------------------------------------------------
+  # PostgreSQL 16 + TimescaleDB
+  # -------------------------------------------------------------------------
+  db:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_DB: signaldach
+      POSTGRES_USER: signaldach
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-signaldach_dev_only}
+    ports:
+      - "5434:5432"
+    volumes:
+      - signaldach-pgdata:/home/postgres/pgdata/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U signaldach"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # -------------------------------------------------------------------------
+  # Redis 7 (Cache + Event Bus + Rate Limiting)
+  # -------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - signaldach-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # -------------------------------------------------------------------------
+  # Backend (FastAPI + Gunicorn)
+  # -------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      SIGNALDACH_DATABASE_URL: postgresql://signaldach:${POSTGRES_PASSWORD:-signaldach_dev_only}@db:5432/signaldach
+      SIGNALDACH_REDIS_URL: redis://redis:6379
+      SIGNALDACH_AUTH_ENABLED: "true"
+      SIGNALDACH_CORS_ORIGINS: '["http://localhost:3000","http://localhost:3002","https://signaldach.com"]'
+      SIGNALDACH_LOG_LEVEL: INFO
+      SIGNALDACH_LOG_FORMAT: json
+      WORKERS: 2
+    env_file:
+      - ./backend/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # -------------------------------------------------------------------------
+  # Frontend (Next.js Standalone)
+  # -------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # -------------------------------------------------------------------------
+  # Prometheus (Metrics Collection)
+  # -------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus_alerts.yml:/etc/prometheus/alerts.yml:ro
+      - signaldach-prometheus:/prometheus
+    depends_on:
+      - backend
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # -------------------------------------------------------------------------
+  # Grafana (Dashboards)
+  # -------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3030:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-signaldach_dev}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - signaldach-grafana:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+volumes:
+  signaldach-pgdata:
+  signaldach-redis:
+  signaldach-prometheus:
+  signaldach-grafana:

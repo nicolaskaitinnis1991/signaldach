@@ -1,0 +1,56 @@
+groups:
+  - name: signaldach
+    rules:
+      - alert: HighErrorRate
+        expr: (rate(signaldach_http_errors_total[5m]) / clamp_min(rate(signaldach_http_requests_total[5m]), 0.001)) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate (> 5%)"
+          description: "SignalDACH backend is returning more than 5% server errors over the last 5 minutes."
+
+      - alert: HighLatency
+        expr: signaldach_http_latency_avg_ms > 2000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API latency above 2 seconds"
+          description: "Average HTTP latency has been above 2000ms for 5 minutes."
+
+      - alert: ScraperFailureRate
+        expr: (signaldach_scrape_errors_total / clamp_min(signaldach_scrapes_total, 1)) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scraper failure rate above 20%"
+          description: "More than 20% of scrape attempts are failing."
+
+      - alert: NoScrapeActivity
+        expr: changes(signaldach_scrapes_total[1h]) == 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No scrape activity for over 1 hour"
+          description: "The scrape counter has not incremented in the last hour. Collectors may be stalled."
+
+      - alert: BackendDown
+        expr: up{job="signaldach-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SignalDACH backend is DOWN"
+          description: "Prometheus cannot reach the backend metrics endpoint."
+
+      - alert: HighWebSocketConnections
+        expr: signaldach_ws_connections_active > 200
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of active WebSocket connections (> 200)"
+          description: "Active WebSocket connections have exceeded 200 for 5 minutes."
