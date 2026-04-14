@@ -90,22 +90,32 @@ async def lifespan(app: FastAPI):
 
     # Auto-seed sources on first startup if DB is empty
     try:
-        from app.database import get_db
+        from app.database import get_db, USE_POSTGRES
         with get_db() as conn:
             cur = conn.cursor()
             cur.execute("SELECT COUNT(*) FROM sources")
-            source_count = cur.fetchone()[0]
+            row = cur.fetchone()
+            source_count = row[0] if isinstance(row, (list, tuple)) else row.get("count", row.get("count(*)", 0))
             if source_count == 0:
                 logger.info("No sources found — auto-seeding defaults...")
                 from app.scrapers.rss_scraper import DEFAULT_RSS_SOURCES
                 for source in DEFAULT_RSS_SOURCES:
                     try:
-                        cur.execute(
-                            """INSERT OR IGNORE INTO sources (id, tenant_id, name, type, category, url, scrape_frequency_minutes)
-                               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                            (source["id"], "default", source["name"], source["type"],
-                             source["category"], source["url"], source["frequency"]),
-                        )
+                        if USE_POSTGRES:
+                            cur.execute(
+                                """INSERT INTO sources (id, tenant_id, name, type, category, url, scrape_frequency_minutes)
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                   ON CONFLICT (id) DO NOTHING""",
+                                (source["id"], "default", source["name"], source["type"],
+                                 source["category"], source["url"], source["frequency"]),
+                            )
+                        else:
+                            cur.execute(
+                                """INSERT OR IGNORE INTO sources (id, tenant_id, name, type, category, url, scrape_frequency_minutes)
+                                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                                (source["id"], "default", source["name"], source["type"],
+                                 source["category"], source["url"], source["frequency"]),
+                            )
                     except Exception as e:
                         logger.warning("Failed to auto-seed source %s: %s", source.get("id", "?"), e)
                 conn.commit()

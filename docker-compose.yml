@@ -53,8 +53,6 @@ services:
       SIGNALDACH_LOG_LEVEL: INFO
       SIGNALDACH_LOG_FORMAT: json
       WORKERS: 2
-    env_file:
-      - ./backend/.env
     depends_on:
       db:
         condition: service_healthy
@@ -75,10 +73,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:8000}
     ports:
       - "3000:3000"
-    environment:
-      NEXT_PUBLIC_BACKEND_URL: http://backend:8000
     depends_on:
       - backend
     restart: unless-stopped

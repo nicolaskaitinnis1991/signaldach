@@ -1,0 +1,11 @@
+node_modules
+.next
+.env
+.env.local
+.git
+.github
+e2e
+tests
+*.test.ts
+*.spec.ts
+playwright-report
