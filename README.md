@@ -1,5 +1,15 @@
 # SignalDACH — AI-Powered Crypto Market Intelligence for DACH
 
+> **📦 Archived project (April 2026).** SignalDACH was built in April 2026 on the thesis
+> that MiCA licensing would open a market window for regulatory-aware crypto market
+> intelligence in Germany, Austria and Switzerland. A follow-up market review in
+> October 2026 confirmed the regulatory read was correct — and that the window was
+> absorbed by incumbents: 100+ licensed institutions in Germany alone (including 41
+> banks authorized in a single quarter) and established tooling covering the parts.
+> The code is released as-is under the MIT license: a complete, tested,
+> self-hostable snapshot of a production-grade build — kept public as proof of an
+> early, correct market read. It is not maintained and will not accept issues or PRs.
+
 Real-time market data, signal analysis, paper trading, tax calculation, and compliance monitoring for cryptocurrency funds operating in the DACH region (Germany, Austria, Switzerland).
 
 ## Features
@@ -40,8 +50,8 @@ Real-time market data, signal analysis, paper trading, tax calculation, and comp
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/nicolaskaitinnis1991/signal-dach.git
-cd signal-dach
+git clone https://github.com/nicolaskaitinnis1991/signaldach.git
+cd signaldach
 
 # 2. Copy environment files
 cp backend/.env.example backend/.env
@@ -83,10 +93,10 @@ npm run dev
 
 ### Run Tests
 ```bash
-# Backend (350 tests, 0 mocks)
+# Backend — verified 2026-10: 333 passed, 17 skipped (skips need live Redis / external APIs)
 cd backend && python -m pytest -v
 
-# Frontend (20 tests)
+# Frontend — verified 2026-10: 20/20
 cd frontend && npm test
 ```
 
@@ -147,4 +157,4 @@ curl -X POST http://localhost:8000/api/auth/register \
 
 ## License
 
-Proprietary. All rights reserved.
+MIT — see [LICENSE](LICENSE).
