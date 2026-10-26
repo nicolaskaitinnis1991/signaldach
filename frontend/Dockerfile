@@ -4,7 +4,9 @@ FROM node:20-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --only=production
+# Build-time deps required (tailwind/postcss are devDependencies);
+# the final image only copies the standalone output, so no runtime bloat.
+RUN npm ci
 
 # Build
 FROM base AS builder
