@@ -12,6 +12,14 @@
 
 Real-time market data, signal analysis, paper trading, tax calculation, and compliance monitoring for cryptocurrency funds operating in the DACH region (Germany, Austria, Switzerland).
 
+![Landing page](docs/screenshots/landing.png)
+
+**Live market data minutes after `docker compose up` (fresh clone, no API keys):**
+
+![Market overview with live data](docs/screenshots/market.png)
+
+![Intelligence feed](docs/screenshots/dashboard.png)
+
 ## Features
 
 - **Live Market Data** — CoinGecko, DefiLlama, Binance, Fear & Greed Index (auto-updating)
