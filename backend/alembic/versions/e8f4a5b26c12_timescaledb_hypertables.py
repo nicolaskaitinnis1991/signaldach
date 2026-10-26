@@ -30,9 +30,15 @@ def upgrade() -> None:
     if conn.dialect.name != "postgresql":
         return
 
-    # Enable TimescaleDB extension
+    # Enable TimescaleDB extension.
+    # NOTE: every optional statement runs in its own SAVEPOINT
+    # (conn.begin_nested()). A bare try/except around op.execute() is not
+    # enough on PostgreSQL: the failed statement aborts the surrounding
+    # transaction and every later statement — including alembic's own
+    # version bump — fails with InFailedSqlTransaction.
     try:
-        op.execute(sa.text("CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE"))
+        with conn.begin_nested():
+            conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE"))
     except Exception:
         # TimescaleDB not installed — skip silently
         return
@@ -40,31 +46,33 @@ def upgrade() -> None:
     # Convert to hypertables
     for table in _HYPERTABLES:
         try:
-            op.execute(
-                sa.text(
-                    f"SELECT create_hypertable('{table}', 'ts', "
-                    f"if_not_exists => TRUE, migrate_data => TRUE)"
+            with conn.begin_nested():
+                conn.execute(
+                    sa.text(
+                        f"SELECT create_hypertable('{table}', 'ts', "
+                        f"if_not_exists => TRUE, migrate_data => TRUE)"
+                    )
                 )
-            )
         except Exception:
             pass  # Already a hypertable or not supported
 
     # Compression policies for high-frequency tables
     for table in ["price_ticks", "market_metrics"]:
         try:
-            op.execute(
-                sa.text(
-                    f"ALTER TABLE {table} SET ("
-                    f"timescaledb.compress, "
-                    f"timescaledb.compress_segmentby = 'symbol')"
+            with conn.begin_nested():
+                conn.execute(
+                    sa.text(
+                        f"ALTER TABLE {table} SET ("
+                        f"timescaledb.compress, "
+                        f"timescaledb.compress_segmentby = 'symbol')"
+                    )
                 )
-            )
-            op.execute(
-                sa.text(
-                    f"SELECT add_compression_policy('{table}', "
-                    f"INTERVAL '30 days', if_not_exists => TRUE)"
+                conn.execute(
+                    sa.text(
+                        f"SELECT add_compression_policy('{table}', "
+                        f"INTERVAL '30 days', if_not_exists => TRUE)"
+                    )
                 )
-            )
         except Exception:
             pass
 
@@ -78,8 +86,9 @@ def downgrade() -> None:
 
     for table in ["price_ticks", "market_metrics"]:
         try:
-            op.execute(
-                sa.text(f"SELECT remove_compression_policy('{table}', if_exists => TRUE)")
-            )
+            with conn.begin_nested():
+                conn.execute(
+                    sa.text(f"SELECT remove_compression_policy('{table}', if_exists => TRUE)")
+                )
         except Exception:
             pass
