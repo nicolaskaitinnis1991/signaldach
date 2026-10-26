@@ -1,0 +1,2 @@
+# False positive: plain code line (key = f"token:{ticker}"), no secret
+5bf205b614f800c472b7bea5ddf1685110ca0760:backend/app/ai/entities.py:generic-api-key:167
