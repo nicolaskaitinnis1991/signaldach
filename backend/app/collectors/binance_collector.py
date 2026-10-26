@@ -212,7 +212,7 @@ async def _ws_stream_loop():
     url = f"{BINANCE_WS}/{streams}"
 
     batch: list[dict] = []
-    last_flush = asyncio.get_event_loop().time()
+    last_flush = asyncio.get_running_loop().time()
 
     while True:
         try:
@@ -235,7 +235,7 @@ async def _ws_stream_loop():
                         "change_pct_24h": float(data.get("P", 0)) if data.get("P") else None,
                     })
 
-                    now = asyncio.get_event_loop().time()
+                    now = asyncio.get_running_loop().time()
                     if now - last_flush >= 10 and batch:
                         stored = await store_price_ticks(batch)
                         await publish_to_stream("signals:prices", {

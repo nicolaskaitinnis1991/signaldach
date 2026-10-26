@@ -13,14 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 def _run_async(coro_fn):
-    """Wrapper to run async collector in sync APScheduler context."""
+    """Wrapper to run async collector in sync APScheduler context.
+
+    APScheduler executes jobs in worker threads, which have no event loop
+    on Python >=3.12 (asyncio.get_event_loop() raises there). Run each job
+    in its own loop via asyncio.run().
+    """
     def wrapper():
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(coro_fn())
-            else:
-                loop.run_until_complete(coro_fn())
+            asyncio.run(coro_fn())
         except Exception as e:
             logger.error("Collector job failed: %s", e)
     return wrapper
