@@ -33,10 +33,10 @@ USER signaldach
 
 EXPOSE 8000
 
-# Production: run migrations then start gunicorn
-CMD ["sh", "-c", "\
-    python -m alembic upgrade head 2>/dev/null || true && \
-    gunicorn app.main:app \
+# Production: run migrations (loudly — a failed migration must fail the start),
+# then start gunicorn
+CMD ["sh", "-c", "python -m alembic upgrade head && \
+    exec gunicorn app.main:app \
     -w ${WORKERS:-2} \
     -k uvicorn.workers.UvicornWorker \
     --bind 0.0.0.0:${PORT:-8000} \
