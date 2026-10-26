@@ -65,6 +65,11 @@ Open:
 - **API Docs**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
 
+**Optional — ML-based German sentiment (adds ~6 GB of torch/CUDA wheels; without it the pipeline uses its built-in lexicon):**
+```bash
+docker compose build --build-arg INSTALL_ML=true backend
+```
+
 **With monitoring (Grafana + Prometheus):**
 ```bash
 docker compose --profile monitoring up --build

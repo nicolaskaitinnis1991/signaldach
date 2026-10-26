@@ -9,10 +9,13 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev curl && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies first (cached layer)
+# Install dependencies first (cached layer).
+# ML extras (torch/transformers, ~6 GB with CUDA wheels) are OPT-IN: the
+# German sentiment pipeline falls back to its lexicon without them.
+ARG INSTALL_ML=false
 COPY pyproject.toml .
 RUN pip install --no-cache-dir . && \
-    pip install --no-cache-dir ".[ml]" 2>/dev/null || true
+    if [ "$INSTALL_ML" = "true" ]; then pip install --no-cache-dir ".[ml]"; fi
 
 # Copy application code + migrations
 COPY app/ app/
