@@ -174,7 +174,12 @@ class TestMarketDataAPI:
         await collect_prices()
 
         from fastapi.testclient import TestClient
+        from app.cache import cache_delete
         from app.main import app
+
+        # Evict any summary cached by earlier tests (e.g. test_cache.py) so the
+        # endpoint reflects the ticks collected above.
+        await cache_delete("market_summary")
 
         with TestClient(app) as client:
             resp = client.get("/api/market/summary")

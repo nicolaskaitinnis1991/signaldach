@@ -23,8 +23,8 @@ try:
     import redis.asyncio as aioredis
 
     _r = aioredis.from_url("redis://localhost:6379", socket_connect_timeout=2)
-    asyncio.get_event_loop().run_until_complete(_r.ping())
-    asyncio.get_event_loop().run_until_complete(_r.aclose())
+    asyncio.run(_r.ping())
+    asyncio.run(_r.aclose())
     _redis_reachable = True
 except Exception:
     pass

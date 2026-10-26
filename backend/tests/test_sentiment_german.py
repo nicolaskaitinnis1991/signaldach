@@ -87,7 +87,7 @@ class TestAnalyzeSentiment:
 
     def test_analyze_sentiment_returns_result(self):
         """analyze_sentiment returns a dict with expected keys."""
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             analyze_sentiment("Bitcoin steigt auf neues Allzeithoch mit Genehmigung der BaFin")
         )
         assert isinstance(result, dict)
@@ -98,7 +98,7 @@ class TestAnalyzeSentiment:
 
     def test_sentiment_to_score_range(self):
         """sentiment_to_score returns value between -1 and 1."""
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             analyze_sentiment("Die Regulierung ist ein großer Durchbruch für den Kryptomarkt")
         )
         score = sentiment_to_score(result)
@@ -106,7 +106,7 @@ class TestAnalyzeSentiment:
 
     def test_analyze_sentiment_empty_text(self):
         """Empty text returns neutral with 'empty' method."""
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             analyze_sentiment("")
         )
         assert result["label"] == "neutral"
@@ -115,7 +115,7 @@ class TestAnalyzeSentiment:
     def test_analyze_sentiment_language_override(self):
         """Language override is respected."""
         # Force English even though text looks German
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             analyze_sentiment("Die BaFin hat eine neue Verordnung erlassen", language="en")
         )
         # Should use English path (finbert or keyword fallback)
